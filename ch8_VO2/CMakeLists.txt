@@ -19,6 +19,8 @@ include_directories(${PROJECT_SOURCE_DIR}/include
 
 add_library(${PROJECT_NAME} SHARED
         src/EdgeSE3ProjectDirect.cpp
+        src/projectDD.cpp
+        src/pose_estimate.cpp
         )
 
 target_link_libraries(
@@ -30,12 +32,22 @@ target_link_libraries(
 )
 
 add_executable(LK useLK.cpp)
-add_executable(DS direct_sparse.cpp)
+add_executable(sparse direct_sparse.cpp )
+add_executable(semidense direct_semi_dense.cpp)
 
 target_link_libraries(LK ${OpenCV_LIBS})
 
 target_link_libraries(
-        DS
+        sparse
+        ${PROJECT_NAME}
+        ${OpenCV_LIBS}
+        g2o_core g2o_stuff g2o_solver_csparse g2o_types_sba
+        g2o_csparse_extension
+        ${CSPARSE_LIBRARY}
+)
+
+target_link_libraries(
+        semidense
         ${PROJECT_NAME}
         ${OpenCV_LIBS}
         g2o_core g2o_stuff g2o_solver_csparse g2o_types_sba

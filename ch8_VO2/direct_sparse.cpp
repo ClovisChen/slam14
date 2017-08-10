@@ -23,85 +23,26 @@
 #include <g2o/types/sba/types_six_dof_expmap.h>
 
 #include "EdgeSE3ProjectDirect.h"
+#include "projectDD.h"
+#include "pose_estimate.h"
 
 using namespace std;
 using namespace g2o;
 
 //point3d and pixel value
-struct Measurement
-{
-    Measurement ( Eigen::Vector3d p, float g ) : pos_world ( p ), grayscale ( g ){}
-    Eigen::Vector3d pos_world;
-    float grayscale;
-};
 
-inline Eigen::Vector3d project2Dto3D ( int x, int y, int d,
-                                       float fx, float fy,
-                                       float cx, float cy,
-                                       float scale )
-{
-    float zz = float ( d ) /scale;
-    float xx = zz* (x-cx)/fx;
-    float yy = zz* (y-cy)/fy;
-    return Eigen::Vector3d ( xx, yy, zz );
-}
-
-inline Eigen::Vector2d project3Dto2D ( float x, float y, float z,
-                                       float fx, float fy,
-                                        float cx, float cy)
-{
-    float u = fx*x/z + cx;
-    float v = fy*y/z + cy;
-    return Eigen::Vector2d ( u,v );
-}
-
-bool poseEstimationDirect ( const vector<Measurement>& measurements,
-Mat* gray, Eigen::Matrix3f& K, Eigen::Isometry3d& Tcw )
-{
-    //g2o init
-    typedef BlockSolver<BlockSolverTraits<6,1>>DirectBlock;//求解的向量是6*1
-    DirectBlock::LinearSolverType* linearSolver = new LinearSolverDense<DirectBlock::PoseMatrixType >();
-    DirectBlock* solver_ptr = new DirectBlock ( linearSolver );
-
-    OptimizationAlgorithmLevenberg* solver = new OptimizationAlgorithmLevenberg(solver_ptr);
-    SparseOptimizer optimizer;
-    optimizer.setAlgorithm(solver);
-    optimizer.setVerbose(true);
-
-    g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();
-    pose->setEstimate( SE3Quat( Tcw.rotation(), Tcw.translation() ) );
-    pose->setId( 0 );
-    optimizer.addVertex(pose);
-
-    //add edge
-    int id=1;
-    for ( Measurement m: measurements )
-    {
-        EdgeSE3ProjectDirect* edge = new EdgeSE3ProjectDirect(
-                m.pos_world,
-                K(0,0), K(1,1), K(0,2), K(1,2), gray );
-        edge->setVertex(0,pose);
-        edge->setMeasurement(m.grayscale);
-        edge->setInformation( Eigen::Matrix<double, 1, 1>::Identity() );
-        edge->setId(id++);
-        optimizer.addEdge( edge );
-    }
-    cout<<"edges in gragh: "<<optimizer.edges().size()<<endl;
-    optimizer.initializeOptimization();
-    optimizer.optimize( 30 );
-    Tcw = pose->estimate();
-}
 
 //input: measurement/ new gray gragh/ camera K/
 //output: camera_pose
 //return: true(succeses)/false(fail)
+
 int main (int argc, char**argv)
 {
-    if ( argc != 2 )
-    {
-        cout<<"usage: useLK path_to_dataset"<<endl;
-        return 1;
-    }
+//    if ( argc != 2 )
+//    {
+//        cout<<"usage: sparse path_to_dataset"<<endl;
+//        return 1;
+//    }
 
     srand ( (unsigned int ) time ( 0 ) );
     //! srand() gives the random function a new seed,
@@ -115,13 +56,13 @@ int main (int argc, char**argv)
     //! (you're guaranteed your seed will be the same only once,
     //! unless you start your program multiple times
     //! within the same second).
-    string path_to_dataset = argv[1];
+    string path_to_dataset = "../../../data/rgbd_dataset_freiburg1_desk";
     string associate_file = path_to_dataset + "/associate.txt";
     ifstream fin ( associate_file );
 
     string rgb_file, depth_file, time_rgb, time_depth;
     Mat color, depth, gray;
-    vector<Measurement>measurements;
+    vector<pose_estimate::Measurement>measurements;
 
     float cx = 325.5;
     float cy = 253.5;
@@ -134,6 +75,9 @@ int main (int argc, char**argv)
     Eigen::Isometry3d Tcw = Eigen::Isometry3d::Identity();
 
     Mat prev_color;
+
+    projectDD AAA;
+    pose_estimate BBB;
 
     //以第一个图像为参考，对后续图像和参考图像做直接法
     for ( int index=0; index<10; index++ )
@@ -158,21 +102,21 @@ int main (int argc, char**argv)
                         (kp.pt.x+20)>color.cols||
                         (kp.pt.y+20)>color.rows )
                     continue;
-                float d = depth.ptr<float>(int(kp.pt.y))[int (kp.pt.x)];
+                ushort d = depth.ptr<uchar>(int(kp.pt.y))[int (kp.pt.x)];
 
                 if ( d==0 )
                     continue;
-                Eigen::Vector3d p3d = project2Dto3D( kp.pt.y, kp.pt.y, d, fx, fy, cx, cy, depth_scale );
-                float grayscale = float ( gray.ptr<uchar>( int ( kp.pt.y))[int (kp.pt.x )]);
-                measurements.push_back(Measurement(p3d,grayscale));
-            }
 
+                Eigen::Vector3d p3d = AAA.project2Dto3D( kp.pt.x, kp.pt.y, d, fx, fy, cx, cy, depth_scale );
+                float grayscale = float ( gray.ptr<uchar>( int ( kp.pt.y))[int (kp.pt.x )]);
+                measurements.push_back(pose_estimate::Measurement(p3d,grayscale));
+            }
             prev_color = color.clone();
             continue;
         }
 
         chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
-        poseEstimationDirect(measurements, &gray, K, Tcw);
+        BBB.poseEstimationDirect(measurements, &gray, K, Tcw);
         chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
         chrono::duration<double> time_used = chrono::duration_cast<chrono::duration<double>> ( t2-t1 );
         cout<<"direct method costs time: "<<time_used.count() <<" seconds."<<endl;
@@ -182,15 +126,15 @@ int main (int argc, char**argv)
         Mat img_show (color.rows*2, color.cols, CV_8UC3 );
         prev_color.copyTo( img_show (Rect ( 0,0,color.cols, color.rows)));
         color.copyTo( img_show ( Rect (0, color.rows, color.cols, color.rows ) ) );
-        for ( Measurement m:measurements )
+        for ( pose_estimate::Measurement m:measurements )
         {
             if (rand()>RAND_MAX/5 )
                 continue;
 
             Eigen::Vector3d p = m.pos_world;
-            Eigen::Vector2d pixel_prev = project3Dto2D( p(0,0), p(1,0), p(2,0), fx, fy, cx, cy);
+            Eigen::Vector2d pixel_prev = AAA.project3Dto2D( p(0,0), p(1,0), p(2,0), fx, fy, cx, cy);
             Eigen::Vector3d p2 = Tcw*m.pos_world;
-            Eigen::Vector2d pixel_now = project3Dto2D( p2(0,0), p2(1,0), p2(2,0), fx, fy, cx, cy );
+            Eigen::Vector2d pixel_now = AAA.project3Dto2D( p2(0,0), p2(1,0), p2(2,0), fx, fy, cx, cy );
 
             if ( pixel_now(0,0)<0 || pixel_now(0,0)>=color.cols ||
                     pixel_now(1,0)<0 || pixel_now(1,0)>=color.rows )
@@ -201,11 +145,10 @@ int main (int argc, char**argv)
             float r = 255*float ( rand() ) / RAND_MAX;
 
             //draw
-            circle( img_show, Point2d ( pixel_prev (0,0), pixel_prev(1,0)), 8 , Scalar(b,g,r), 2 );
-            circle( img_show, Point2d ( pixel_now (0,0), pixel_now(1,0)+ color.rows), 8, Scalar(b,g,r), 2 );
+            circle( img_show, Point2d ( pixel_prev (0,0), pixel_prev(1,0)), 4 , Scalar(b,g,r), 2 );
+            circle( img_show, Point2d ( pixel_now (0,0), pixel_now(1,0)+ color.rows), 4, Scalar(b,g,r), 2 );
             line( img_show, Point2d ( pixel_prev(0,0), pixel_prev(1,0)), Point2d(pixel_now(0,0), pixel_now(1,0)+color.rows),Scalar(b,g,r), 1);
         }
-
         imshow("result", img_show );
         waitKey(0);
     }
