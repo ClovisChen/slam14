@@ -12,6 +12,7 @@ using namespace std;
 #include <Eigen/Geometry>
 
 #include <boost/format.hpp>
+//字符串格式化
 
 #include <pcl/point_types.h>
 #include <pcl/io/pcd_io.h>
@@ -92,4 +93,3 @@ int main(int argc, char** argv){
     cout<<"pointcloud has "<<pointCloud->size()<<" points"<<endl;
     pcl::io::savePCDFileBinary("map.pcd", *pointCloud);
 }
-

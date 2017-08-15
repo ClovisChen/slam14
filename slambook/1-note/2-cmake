@@ -1,0 +1,48 @@
+g++
+g++ helleoSLAM.cpp
+./a.out
+
+CMake
+  slambook/ch2/中新建一个 CMakeLists.txt 文件
+  输入：
+    1 # 声明要求的cmake 最低版本
+    2 cmake_minimum_required( VERSION 2.8 )
+    3
+    4 # 声明一个cmake 工程
+    5 project( HelloSLAM )
+    6
+    7 # 添加一个可执行程序
+    8 # 语法： add_executable( 程序名源代码文件）
+    9 add_executable( helloSLAM helloSLAM.cpp )
+
+  在当前目录下 slambook/ch2/
+  cmake .(分析)
+  make(编译)
+
+  中间目录：
+  mkdir build
+  cd build
+  cmake ..
+  make
+  ./生成的函数名
+  编译依赖环境时 sudo make install
+               sudo ldconfig
+
+  使用库
+  CMakeLists.txt添加
+  add_library( hello libHelloSLAM.cpp )(静态库)
+  add_library( hello_shared SHARED libHelloSLAM.cpp )（共享库）
+  写头文件libHelloSLAM.h
+  1 #ifndef LIBHELLOSLAM_H_
+  2 #define LIBHELLOSLAM_H_
+  3 void printHello();
+  4 #endif
+  然后在CMakeLists.txt添加一个可执行程序的生成命令，连接到库上
+  add_executable( useHello useHello.cpp )
+  target_link_libraries( useHello hello_shared )
+
+Kdevelop(断点调试)
+  CMakeLists.txt 设置断点调试
+  set( CMAKE_BUILD_TYPE "Debug" )
+
+  运行 -配置启动器 Add New-应用程序

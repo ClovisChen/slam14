@@ -1,0 +1,42 @@
+射影几何、计算机视觉、状态估计理论、李群李代数
+《概率机器人》
+《计算机视觉中的多视图几何》(Multiple View Geometry in Computer Vision)
+《机器人学中的状态估计》(State Estimation for Robotics: A Matrix-Lie-Group Approach)
+
+Eigen OpenCV PCL g2o ceres等库
+
+安装于环境中的：二维码marker GPS 导轨，磁条
+携带于机器人本体上的：IMU 激光 相机
+强调未知环境 重视携带式传感器
+相机： 以一定速率采集图像
+  单目Monocular：通过移动相机产生深度
+	双目Stereo：视差
+	深度RGBD：物理方法测量深度 结构光
+	其他（鱼眼 全景 Event）  丢掉了距离维度
+  ## Sensors
+  - 安装于环境中的：二维码marker GPS 导轨，磁条
+  - 携带于机器人本体上的：IMU 激光 相机
+  - 强调未知环境 重视携带式传感器
+  - 相机： 以一定速率采集图像
+    - 单目Monocular：通过移动相机产生深度
+    - 双目Stereo：视差
+    - 深度RGBD：物理方法测量深度 结构光
+    - 其他（鱼眼 全景 Event）  丢掉了距离维度
+  ## 数学描述
+  1. 运动方程（上一时刻，输入，噪声--下一时刻）小萝卜。
+  2. 观测方程（传感器，路标）
+
+传感器数据
+前端：（Visual Odometry，VO）
+后端：（Optimization）
+（Loop Closing）
+（Mapping）
+
+（Accumulating） Drift 后端优化 回环检测
+
+Metric Map/Topological Map
+
+运动方程（上一时刻，输入，噪声--下一时刻）小萝卜。
+观测方程（传感器，路标）
+
+g++（c++编译器）cmake编译一个工程

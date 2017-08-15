@@ -1,0 +1,3 @@
+ceres库的安装编译
+
+ceres提供自动求导 避免求Jacobi矩阵
