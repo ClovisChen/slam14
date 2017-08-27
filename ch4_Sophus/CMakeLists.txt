@@ -8,6 +8,8 @@ include_directories("/usr/include/eigen3")
 find_package(Sophus REQUIRED)
 include_directories(${Sophus_INCLUDE_DIRS})
 
+message(${Sophus_INCLUDE_DIRS})
+
 set(SOURCE_FILES useSopgus.cpp)
 add_executable(useSophus ${SOURCE_FILES})
 target_link_libraries(useSophus ${Sophus_LIBRARIES})

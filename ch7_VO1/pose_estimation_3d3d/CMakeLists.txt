@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 11)
 set( EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set( LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-find_package(OpenCV 3 REQUIRED PATHS /home/chen-tian/Desktop/2_Opencv/opencv-master/install/share/OpenCV NO_DEFAULT_PATH)
+find_package(OpenCV 3 REQUIRED PATHS /home/chen-tian/set_up/opencv3/install/share/OpenCV NO_DEFAULT_PATH)
 
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules )
 find_package(G2O REQUIRED)
